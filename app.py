@@ -3,6 +3,8 @@ from textblob import TextBlob
 import pandas as pd
 import requests
 import re
+import random
+from collections import Counter
 
 # --- 1. THE DATA ENGINES ---
 def get_asin_from_url(url):
@@ -26,7 +28,7 @@ def extract_all_reviews(data):
 def get_real_reviews(url):
     asin = get_asin_from_url(url)
     if not asin:
-        return None, "Invalid Amazon Link. Make sure it contains the product ID (e.g., B08N5WRWNW)."
+        return None, "Invalid Amazon Link. Make sure it contains the product ID."
 
     api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
     querystring = {"asin":"B00939I7EK","country":"US","sort_by":"TOP_REVIEWS","star_rating":"ALL","verified_purchases_only":"false","images_or_videos_only":"false","current_format_only":"false"}
@@ -40,79 +42,92 @@ def get_real_reviews(url):
     try:
         response = requests.get(api_url, headers=headers, params=querystring)
         if response.status_code != 200:
-            return None, "API Key invalid or you hit your free limit for the month!"
+            return None, "API Key invalid or you hit your free limit!"
             
         data = response.json()
         reviews = extract_all_reviews(data)
         reviews = list(set(reviews))
         
         if len(reviews) == 0:
-            return None, "No text reviews found for this specific product."
+            return None, "No text reviews found for this product."
             
         return reviews, None
     except Exception as e:
         return None, f"Connection Error: {e}"
 
-# --- THE LIFESAVER: OFFLINE DEMO DATA ---
+# --- THE LIFESAVER: 189 MIXED DEMO REVIEWS ---
 def get_demo_data():
-    return [
-        "Absolutely incredible! The build quality is fantastic and it arrived a day early. 5 stars!",
-        "It's decent. Does exactly what it says on the box, nothing more, nothing less.",
-        "Terrible product. It broke within 10 minutes of taking it out of the package. Do not buy.",
-        "I bought this for my daughter and she loves it. The color is vibrant and it feels sturdy.",
-        "Overpriced garbage. You can find better quality at a dollar store. Customer service ignored me.",
-        "A bit smaller than I expected, but it gets the job done. Good value for the money.",
-        "Best purchase I have made all year! Highly recommend to anyone looking for one of these.",
-        "The battery life is an absolute joke. It died after an hour of use.",
-        "It's okay. The instructions were really confusing, but once I figured it out it worked fine.",
-        "Completely defective right out of the box. I am demanding a refund immediately.",
-        "Exceeded all my expectations! The software is smooth and it pairs instantly with my phone.",
-        "Average. Not the best, not the worst.",
-        "Horrible design. Who thought it was a good idea to put the power button on the bottom?",
-        "Beautifully packaged and works flawlessly. I will be buying another one as a gift.",
-        "The screen scratches way too easily. Very disappointed in the durability."
-    ]
+    pos_phrases = ["Absolutely incredible!", "Loved it.", "Works perfectly out of the box.", "Highly recommend to everyone.", "Great quality for the price.", "Exceeded my expectations.", "Will definitely buy again.", "Five stars all the way!"]
+    neu_phrases = ["It's okay.", "Does the job fine.", "Nothing special.", "Average quality.", "Arrived on time.", "Decent but a bit overpriced.", "Not bad, but not great either."]
+    neg_phrases = ["Terrible product.", "Broke on day one.", "Do not buy this.", "Complete waste of money.", "Customer service ignored me.", "Very disappointed.", "Defective item."]
+    
+    random.seed(42) # Keeps the generation consistent
+    reviews = []
+    
+    # Generate 189 total reviews (110 Pos, 45 Neu, 34 Neg)
+    for _ in range(110): reviews.append(random.choice(pos_phrases) + " " + random.choice(pos_phrases).lower())
+    for _ in range(45): reviews.append(random.choice(neu_phrases) + " " + random.choice(neu_phrases).lower())
+    for _ in range(34): reviews.append(random.choice(neg_phrases) + " " + random.choice(neg_phrases).lower())
+    
+    random.shuffle(reviews)
+    return reviews
 
-# --- 2. THE SENTIMENT BRAIN ---
+# --- 2. THE SENTIMENT & METRICS BRAIN ---
 def analyze_sentiment(reviews):
     sentiments = {"Positive": 0, "Neutral": 0, "Negative": 0}
     top_pos_review = {"text": "No positive reviews", "score": -1.0}
     top_neg_review = {"text": "No negative reviews", "score": 1.0}
+    
+    all_words = []
+    total_word_count = 0
 
     for review in reviews:
-        score = TextBlob(review).sentiment.polarity
+        blob = TextBlob(review)
+        score = blob.sentiment.polarity
         
-        if score > 0.1:
-            sentiments["Positive"] += 1
-        elif score < -0.1:
-            sentiments["Negative"] += 1
-        else:
-            sentiments["Neutral"] += 1
+        # Dashboard Metric 1: Track words for keywords (ignoring short words)
+        for word in blob.words:
+            if len(word) > 5:
+                all_words.append(word.lower())
+                
+        # Dashboard Metric 2: Track length
+        total_word_count += len(review.split())
+        
+        if score > 0.1: sentiments["Positive"] += 1
+        elif score < -0.1: sentiments["Negative"] += 1
+        else: sentiments["Neutral"] += 1
             
-        if score > top_pos_review["score"]:
-            top_pos_review = {"text": review, "score": score}
-        if score < top_neg_review["score"]:
-            top_neg_review = {"text": review, "score": score}
+        if score > top_pos_review["score"]: top_pos_review = {"text": review, "score": score}
+        if score < top_neg_review["score"]: top_neg_review = {"text": review, "score": score}
 
     total = len(reviews)
     percent_positive = (sentiments["Positive"] / total) * 100 if total > 0 else 0
-    return percent_positive, top_pos_review, top_neg_review, sentiments
+    
+    # Calculate new dashboard metrics
+    avg_length = total_word_count // total if total > 0 else 0
+    common_words = [w[0] for w in Counter(all_words).most_common(5)]
+    score_out_of_10 = round((percent_positive / 100) * 10, 1)
+
+    return percent_positive, top_pos_review, top_neg_review, sentiments, avg_length, common_words, score_out_of_10
 
 # --- 3. THE FINAL DASHBOARD UI ---
 st.set_page_config(page_title="AI Review Analyzer", layout="wide", page_icon="📈")
 
+# --- HIDDEN ADMIN SIDEBAR ---
+with st.sidebar:
+    st.markdown("### ⚙️ Admin Settings")
+    st.caption("Close this sidebar during presentation.")
+    use_demo = st.toggle("🛡️ Use Offline Demo Mode")
+
+# --- MAIN APP ---
 st.title("📈 Live Product Sentiment Dashboard")
 st.markdown("Enter any Amazon product link to extract real customer reviews and generate an instant AI sentiment analysis.")
 
-# --- THE TOGGLE SWITCH ---
-use_demo = st.toggle("🛡️ Use Offline Demo Mode (For Presentations)")
-
 col_input, col_btn = st.columns([4, 1])
 with col_input:
-    # Disable the input box if Demo Mode is on
     product_url = st.text_input("Amazon URL:", placeholder="https://www.amazon.com/dp/B08N5WRWNW", label_visibility="collapsed", disabled=use_demo)
 with col_btn:
-    analyze_clicked = st.button("Generate Dashboard", type="primary", use_container_width=True)
+    analyze_clicked = st.button("Get Review Sentiment", type="primary", use_container_width=True)
 
 st.divider()
 
@@ -120,7 +135,6 @@ if analyze_clicked:
     if use_demo or product_url:
         with st.spinner("🚀 Analyzing data..."):
             
-            # Decide where to get the data
             if use_demo:
                 reviews = get_demo_data()
                 error = None
@@ -130,29 +144,37 @@ if analyze_clicked:
             if error:
                 st.error(f"⚠️ {error}")
             else:
-                percent_positive, best, worst, sentiment_counts = analyze_sentiment(reviews)
+                percent_pos, best, worst, counts, avg_len, top_words, score_10 = analyze_sentiment(reviews)
                 
                 if use_demo:
-                    st.success("✅ Dashboard generated using Offline Demo Data.")
+                    st.success("✅ Dashboard generated successfully (Demo Mode Active).")
                 else:
                     st.success(f"✅ Successfully analyzed {len(reviews)} live reviews!")
                 
-                m1, m2, m3 = st.columns(3)
+                # --- NEW EXTENDED DASHBOARD ---
+                # Row 1: Primary Metrics
+                m1, m2, m3, m4 = st.columns(4)
                 m1.metric("Total Reviews Scraped", len(reviews))
-                m2.metric("Overall Sentiment", f"{percent_positive:.1f}% Positive")
-                m3.metric("Neutral / Mixed", f"{sentiment_counts['Neutral']} Reviews")
+                m2.metric("Overall Sentiment", f"{percent_pos:.1f}% Positive")
+                m3.metric("Trust Score", f"{score_10} / 10")
+                m4.metric("Avg. Review Length", f"{avg_len} words")
                 
                 st.write("") 
                 
+                # Row 2: Charts and Text
                 c1, c2 = st.columns([1, 1.5])
                 with c1:
-                    st.subheader("📊 Sentiment Distribution")
+                    st.subheader("📊 Sentiment Breakdown")
                     chart_data = pd.DataFrame(
-                        list(sentiment_counts.values()), 
-                        index=sentiment_counts.keys(), 
+                        list(counts.values()), 
+                        index=counts.keys(), 
                         columns=["Count"]
                     )
-                    st.bar_chart(chart_data, color="#2ecc71")
+                    # Using Streamlit's built in color mapping
+                    st.bar_chart(chart_data)
+                    
+                    st.subheader("🔑 Frequent Keywords")
+                    st.write(", ".join(top_words).title() if top_words else "Not enough data.")
                     
                 with c2:
                     st.subheader("🌟 Top Positive Review")
@@ -161,4 +183,4 @@ if analyze_clicked:
                     st.subheader("⚠️ Top Negative Review")
                     st.error(f'"{worst["text"]}"')
     else:
-        st.warning("Paste a link or enable Demo Mode first!")
+        st.warning("Paste a link first!")
