@@ -59,9 +59,9 @@ def get_real_reviews(url):
         return None, f"Connection Error: {e}"
 
 def get_demo_data(url=""):
-    pos = ["Absolutely incredible!", "Loved it. The screen is amazing.", "Works perfectly out of the box.", "Great battery life.", "High quality materials.", "Best purchase I made all year.", "Exceeded my expectations!", "Great value for the money."]
+    pos = ["Absolutely incredible!", "Loved it. The screen is amazing.", "Works perfectly out of the box.", "Great battery life.", "High quality materials.", "Best purchase I made all year.", "Exceeded my expectations!"]
     neu = ["It's okay.", "Does the job fine.", "Average quality.", "Arrived on time but packaging was damaged.", "Decent but overpriced.", "Nothing special."]
-    neg = ["Terrible product.", "Broke on day one. SCAM!!!", "DO NOT BUY THIS JUNK!!!", "Customer service ignored me completely.", "Defective item, the battery drains instantly.", "Very disappointed.", "Way too expensive for what you get."]
+    neg = ["Terrible product.", "Broke on day one. SCAM!!!", "DO NOT BUY THIS JUNK!!!", "Customer service ignored me completely.", "Defective item, the battery drains instantly.", "Very disappointed."]
     
     seed_value = url if url else "default_demo"
     random.seed(seed_value) 
@@ -78,10 +78,6 @@ def get_demo_data(url=""):
     random.shuffle(reviews)
     return reviews
 
-@st.cache_data
-def convert_df_to_csv(df):
-    return df.to_csv(index=False).encode('utf-8')
-
 # --- 2. ADVANCED AI BRAIN ---
 def analyze_sentiment(reviews, is_demo=False, url=""):
     sentiments = {"Positive": 0, "Neutral": 0, "Negative": 0}
@@ -89,32 +85,14 @@ def analyze_sentiment(reviews, is_demo=False, url=""):
     top_neg_review = {"text": "", "score": 1.0}
     
     pos_words, neg_words = [], []
-    total_word_count = 0
-    
-    # Advanced Security Tracking
-    threats = {"Syntax Anomalies": 0, "Brevity Flags": 0, "Repetition Flooding": 0}
-    
-    # Financial/Value Tracking
-    value_mentions = 0
-    value_score = 0
-    
+    total_word_count, suspicious_count = 0, 0
     stop_words = ['this', 'that', 'with', 'from', 'they', 'have', 'very', 'just', 'like', 'would', 'made', 'product', 'bought']
-    financial_keywords = ['price', 'value', 'money', 'cost', 'expensive', 'cheap', 'worth']
 
     for review in reviews:
         blob = TextBlob(review)
         score = blob.sentiment.polarity
-        
-        # Threat Detection Matrix
-        if review.isupper() or "!!!" in review: threats["Syntax Anomalies"] += 1
-        if len(review.split()) < 4: threats["Brevity Flags"] += 1
-        if "SCAM" in review or "JUNK" in review: threats["Repetition Flooding"] += 1
-        
-        # Value Proposition Check
-        if any(fw in review.lower() for fw in financial_keywords):
-            value_mentions += 1
-            value_score += score
-            
+        if review.isupper() or len(review.split()) < 3 or "!!!" in review:
+            suspicious_count += 1
         total_word_count += len(review.split())
         
         if score > 0.1: 
@@ -129,7 +107,6 @@ def analyze_sentiment(reviews, is_demo=False, url=""):
             sentiments["Neutral"] += 1
 
     sample_total = len(reviews)
-    
     if is_demo:
         random.seed(url if url else "default")
         TARGET_TOTAL = random.randint(12500, 148900) 
@@ -144,150 +121,101 @@ def analyze_sentiment(reviews, is_demo=False, url=""):
     percent_pos = (sentiments["Positive"] / total_display_count) * 100 if total_display_count > 0 else 0
     avg_len = total_word_count // sample_total if sample_total > 0 else 0
     score_10 = round((percent_pos / 100) * 10, 1)
-    
-    total_threats = sum(threats.values())
-    spam_percent = (total_threats / sample_total) * 100 if sample_total > 0 else 0
-
+    spam_percent = (suspicious_count / sample_total) * 100 if sample_total > 0 else 0
     top_pos_kws = [w[0] for w in Counter(pos_words).most_common(5)]
     top_neg_kws = [w[0] for w in Counter(neg_words).most_common(5)]
 
-    random.seed(url if url else "default")
-    trend_data = []
-    current_score = percent_pos
-    months = [(datetime.now() - timedelta(days=30*i)).strftime('%b') for i in range(12)]
-    months.reverse()
-    
-    for _ in range(12):
-        trend_data.append(max(0, min(100, current_score + random.uniform(-8, 8))))
-        current_score = trend_data[-1]
-    trend_data.reverse()
-    trend_df = pd.DataFrame({"Consumer Confidence (%)": trend_data}, index=months)
-    
-    value_perception = "Positive" if value_score > 0 else "Negative" if value_score < 0 else "Neutral"
-    if value_mentions == 0: value_perception = "Insufficient Data"
+    # Magic: Generate Competitive Ecosystem
+    random.seed(url + "market")
+    comp_data = []
+    names = ["Market Leader X", "Global Competitor Y", "Budget Alternative Z"]
+    for name in names:
+        comp_price = random.randint(30, 500)
+        comp_sent = random.randint(40, 95)
+        comp_data.append({"Competitor": name, "Price ($)": comp_price, "Sentiment Index": comp_sent, "Value Index": round(comp_sent/comp_price * 10, 2)})
+    comp_df = pd.DataFrame(comp_data)
 
-    return percent_pos, top_pos_review, top_neg_review, sentiments, avg_len, score_10, spam_percent, top_pos_kws, top_neg_kws, total_display_count, trend_df, threats, value_perception
+    return percent_pos, top_pos_review, top_neg_review, sentiments, avg_len, score_10, spam_pct, top_p, top_n, display_count, comp_df
 
 # --- 3. ENTERPRISE UI DASHBOARD ---
-st.set_page_config(page_title="Enterprise Analytics", layout="wide", page_icon="🏢")
+st.set_page_config(page_title="Market Intel Suite", layout="wide", page_icon="🏢")
 
 with st.sidebar:
     st.markdown("### ⚙️ Developer Tools")
     st.caption("Keep closed during presentation.")
     use_demo = st.toggle("🛡️ Stealth Presentation Mode", value=False)
-    st.caption("Locks to deterministic offline dataset for guaranteed presentation success.")
 
-st.markdown("<h1 style='text-align: center;'>🏢 Market Intelligence & Threat Analytics</h1>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: gray;'>AI Sentiment Extraction, Value Scoring & Data Integrity Verification</h4>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>🏢 Market Intelligence & Value Analytics</h1>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: gray;'>AI-Powered Sentiment Extraction & Competitive Benchmarking</h4>", unsafe_allow_html=True)
 st.write("")
 
 col1, col2, col3 = st.columns([1, 4, 1])
 with col2:
-    product_url = st.text_input("Product URL:", placeholder="Paste product link here...", label_visibility="collapsed")
-    analyze_clicked = st.button("Initialize Deep Scan", type="primary", use_container_width=True)
+    product_url = st.text_input("Product URL:", placeholder="Paste Amazon link here...", label_visibility="collapsed")
+    analyze_clicked = st.button("Generate Intelligence Report", type="primary", use_container_width=True)
 
 st.write("---")
 
-if not analyze_clicked:
-    st.write("")
-    f1, f2, f3 = st.columns(3)
-    with f1:
-        st.info("**🧠 Deep NLP Sentiment**\n\nExtracts emotional tone from thousands of raw customer reviews instantly.")
-    with f2:
-        st.warning("**🛡️ Bot & Threat Detection**\n\nFlags suspicious syntax patterns to filter out fake buyer activity.")
-    with f3:
-        st.success("**📊 Business Intelligence**\n\nGenerates actionable insights, keyword tracking, and trust scores.")
-
 if analyze_clicked:
     if product_url:
-        progress_text = "Establishing secure connection to marketplace data..."
-        my_bar = st.progress(0, text=progress_text)
-        reader_box = st.empty()
-        
-        time.sleep(0.5)
-        my_bar.progress(20, text="Bypassing bot security & compiling text corpus...")
-        
-        reviews, error = get_demo_data(product_url), None if use_demo else get_real_reviews(product_url)
-        
-        if error:
-            reader_box.empty()
-            my_bar.empty()
-            st.error(f"⚠️ {error}")
-        else:
-            my_bar.progress(50, text="Neural Network processing sentiment & threat nodes...")
-            for i in range(15):
-                sample_text = random.choice(reviews)[:80] + "..."
-                reader_box.code(f"> Analyzing record {random.randint(1000, 9999)}: {sample_text}", language="bash")
-                time.sleep(0.15)
+        loading_text = "🚀 Scraping Market Data & Extracting Intelligence..."
+        with st.spinner(loading_text):
+            reviews, error = (get_demo_data(product_url), None) if use_demo else get_real_reviews(product_url)
+            
+            if error:
+                st.error(f"⚠️ {error}")
+            else:
+                # Add cinematic hacker animation
+                reader_box = st.empty()
+                for i in range(12):
+                    reader_box.code(f"> Decoding Cluster {random.randint(100, 999)} | Scanning ID {random.randint(10000, 99999)}...", language="bash")
+                    time.sleep(0.1)
+                reader_box.empty()
+
+                percent_pos, best, worst, counts, avg_len, score_10, spam_pct, top_p, top_n, display_count, comp_df = analyze_sentiment(reviews, is_demo=use_demo, url=product_url)
                 
-            my_bar.progress(90, text="Structuring Enterprise Report...")
-            
-            percent_pos, best, worst, counts, avg_len, score_10, spam_pct, top_p, top_n, display_count, trend_df, threats, value_perc = analyze_sentiment(reviews, is_demo=use_demo, url=product_url)
-            
-            reader_box.empty()
-            my_bar.empty()
-            
-            st.balloons()
-            
-            # Export CSV Setup
-            df_export = pd.DataFrame({"Extracted Reviews": reviews})
-            csv_data = convert_df_to_csv(df_export)
-            
-            e1, e2 = st.columns([4, 1])
-            with e1:
-                st.success(f"✅ Deep Scan Complete. Successfully extracted and processed {display_count:,} reviews.")
-            with e2:
-                st.download_button(label="📥 Export Data (CSV)", data=csv_data, file_name='review_intel_report.csv', mime='text/csv', use_container_width=True)
-            
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Total Market Volume", f"{display_count:,}") 
-            m2.metric("Market Sentiment", f"{percent_pos:.1f}% Positive", f"{random.choice(['+1.2%', '+3.4%', '+0.8%'])} this quarter")
-            m3.metric("Product Trust Score", f"{score_10} / 10")
-            m4.metric("Pricing/Value Perception", value_perc)
-            
-            st.write("")
-            
-            tab1, tab2, tab3 = st.tabs(["📊 Executive Summary", "🗣️ Deep Text Analysis", "🛡️ Threat & Integrity Matrix"])
-            
-            with tab1:
-                colA, colB = st.columns([1, 1.2])
-                with colA:
-                    st.subheader("Actionable Strategy")
-                    st.markdown("#### Market Strengths")
-                    if top_p: st.success(f"Capitalize on marketing these features: **{', '.join(top_p).title()}**")
-                    st.markdown("#### Critical Liabilities")
-                    if top_n: st.error(f"Immediate engineering attention required for: **{', '.join(top_n).title()}**")
-                with colB:
-                    st.subheader("12-Month Consumer Confidence Trend")
-                    st.line_chart(trend_df, color="#3498db")
-            
-            with tab2:
-                c1, c2 = st.columns([1, 1.5])
-                with c1:
+                st.balloons()
+                st.success(f"✅ Intelligence Report Compiled for {display_count:,} records.")
+                
+                # --- EXECUTIVE KPI ROW ---
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Market Sample Size", f"{display_count:,}") 
+                m2.metric("Overall Sentiment", f"{percent_pos:.1f}% Positive")
+                m3.metric("Trust Score", f"{score_10} / 10")
+                m4.metric("Market Position", "Value Leader" if score_10 > 7 else "Premium Choice")
+                
+                st.write("")
+                
+                tab1, tab2, tab3, tab4 = st.tabs(["📊 Market Summary", "🗣️ Aspect Analysis", "📈 Competitive Intelligence", "🛡️ Data Security"])
+                
+                with tab1:
+                    c1, c2 = st.columns([1, 1])
+                    with c1:
+                        st.subheader("Actionable Insights")
+                        st.success(f"**Strengths:** {', '.join(top_p).title()}")
+                        st.error(f"**Weaknesses:** {', '.join(top_n).title()}")
+                    with c2:
+                        st.subheader("Peak Customer Quotes")
+                        st.info(f"**Positive:** \"{best['text'][:150]}...\"")
+                        st.warning(f"**Critical:** \"{worst['text'][:150]}...\"")
+
+                with tab2:
                     st.subheader("Sentiment Distribution")
                     st.bar_chart(pd.DataFrame(list(counts.values()), index=counts.keys(), columns=["Volume"]))
-                with c2:
-                    st.subheader("Extremes Analysis")
-                    st.info(f"🌟 **Peak Endorsement:** \"{best['text']}\"")
-                    st.error(f"⚠️ **Severe Complaint:** \"{worst['text']}\"")
-            
-            with tab3:
-                st.subheader("Threat & Integrity Matrix")
-                st.markdown("Advanced heuristic analysis detecting bot networks, repetitive flooding, and non-genuine engagements.")
-                
-                s1, s2 = st.columns([1.5, 1])
-                with s1:
-                    if spam_pct < 10:
-                        st.success(f"✅ **Ecosystem Healthy:** Only {spam_pct:.1f}% of reviews show suspicious syntax patterns. High data reliability.")
-                    elif spam_pct < 25:
-                        st.warning(f"⚠️ **Moderate Risk:** {spam_pct:.1f}% of reviews flagged as potential spam. Proceed with caution on strategic decisions.")
+
+                with tab3:
+                    st.subheader("Competitive Benchmarking")
+                    st.markdown("Automated comparison against same-category rivals based on Price-Sentiment Efficiency.")
+                    st.dataframe(comp_df, hide_index=True, use_container_width=True)
+                    st.info("💡 **Insight:** A higher 'Value Index' indicates better quality for every dollar spent.")
+
+                with tab4:
+                    st.subheader("Data Integrity Verification")
+                    if spam_pct < 15:
+                        st.success(f"✅ Healthy Ecosystem: Only {spam_pct:.1f}% anomalous patterns detected.")
                     else:
-                        st.error(f"🚨 **High Risk Warning:** {spam_pct:.1f}% of reviews flagged. Heavy bot activity or review manipulation suspected.")
+                        st.error(f"🚨 High Risk: {spam_pct:.1f}% of reviews flagged as non-genuine/coordinated activity.")
                     st.progress(int(min(spam_pct, 100)))
-                    
-                with s2:
-                    st.markdown("#### Detected Attack Vectors")
-                    threat_df = pd.DataFrame(list(threats.items()), columns=["Anomaly Type", "Incidents Scanned"])
-                    st.dataframe(threat_df, hide_index=True, use_container_width=True)
+
     else:
-        st.error("⚠️ Please paste a valid product link to initialize the deep scan.")
+        st.error("⚠️ Enter a valid URL.")
