@@ -34,13 +34,14 @@ def get_real_reviews(url):
         return None, "Invalid Amazon Link. Make sure it contains the product ID (e.g., B08N5WRWNW)."
 
     # RapidAPI Amazon53 Setup
-    api_url = "https://amazon53.p.rapidapi.com/reviews"
-    querystring = {"asin": asin, "country": "US", "sort_by": "recent"}
+    api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
+    querystring = {"asin":"B00939I7EK","country":"US","sort_by":"TOP_REVIEWS","star_rating":"ALL","verified_purchases_only":"false","images_or_videos_only":"false","current_format_only":"false"}
 
     headers = {
-        "X-RapidAPI-Key": "YOUR_ACTUAL_API_KEY", # <--- PASTE YOUR RAPIDAPI KEY HERE
-        "X-RapidAPI-Host": "amazon53.p.rapidapi.com"
-    }
+	"x-rapidapi-key": "07cad06a0amsh9baed78433f774ep14e4e5jsne01452ded97a",
+	"x-rapidapi-host": "real-time-amazon-data.p.rapidapi.com",
+	"Content-Type": "application/json"
+}
 
     try:
         response = requests.get(api_url, headers=headers, params=querystring)
