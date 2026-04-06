@@ -37,13 +37,14 @@ def get_real_reviews(url):
     if not asin:
         return None, "Invalid Amazon Link."
 
-    api_url = "https://amazon53.p.rapidapi.com/reviews"
-    querystring = {"asin": asin, "country": "US", "sort_by": "recent"}
-    headers = {
-        "X-RapidAPI-Key": st.secrets["RAPIDAPI_KEY"], 
-        "X-RapidAPI-Host": "amazon53.p.rapidapi.com"
-    }
+    api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
+    querystring = {"asin":"B00939I7EK","country":"US","sort_by":"TOP_REVIEWS","star_rating":"ALL","verified_purchases_only":"false","images_or_videos_only":"false","current_format_only":"false"}
 
+    headers = {
+  "x-rapidapi-key": "07cad06a0amsh9baed78433f774ep14e4e5jsne01452ded97a",
+  "x-rapidapi-host": "real-time-amazon-data.p.rapidapi.com",
+  "Content-Type": "application/json"
+}
     try:
         response = requests.get(api_url, headers=headers, params=querystring)
         if response.status_code != 200:
