@@ -31,6 +31,10 @@ def get_reviews(url):
     try:
         response = requests.get(api_url, headers=headers, params=querystring)
         data = response.json()
+
+		import streamlit as st
+        st.warning("🔍 DEBUG MODE: Here is the raw data from the API:")
+        st.json(data)
         
         # Extract just the text from the API's complex response
         reviews = []
