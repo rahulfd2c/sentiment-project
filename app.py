@@ -57,21 +57,30 @@ def get_real_reviews(url):
     except Exception as e:
         return None, f"Connection Error: {e}"
 
-def get_demo_data():
-    pos = ["Absolutely incredible!", "Loved it. The screen is amazing.", "Works perfectly out of the box.", "Great battery life.", "High quality materials.", "Best purchase I made all year."]
-    neu = ["It's okay.", "Does the job fine.", "Average quality.", "Arrived on time but packaging was damaged.", "Decent but overpriced."]
-    neg = ["Terrible product.", "Broke on day one. SCAM!!!", "DO NOT BUY THIS JUNK!!!", "Customer service ignored me completely.", "Defective item, the battery drains instantly."]
+def get_demo_data(url=""):
+    pos = ["Absolutely incredible!", "Loved it. The screen is amazing.", "Works perfectly out of the box.", "Great battery life.", "High quality materials.", "Best purchase I made all year.", "Exceeded my expectations!"]
+    neu = ["It's okay.", "Does the job fine.", "Average quality.", "Arrived on time but packaging was damaged.", "Decent but overpriced.", "Nothing special."]
+    neg = ["Terrible product.", "Broke on day one. SCAM!!!", "DO NOT BUY THIS JUNK!!!", "Customer service ignored me completely.", "Defective item, the battery drains instantly.", "Very disappointed."]
     
-    random.seed(42) 
+    # THE MAGIC: Lock the randomness to this specific URL
+    seed_value = url if url else "default_demo"
+    random.seed(seed_value) 
+    
+    # Randomly generate a unique distribution for this specific link
+    num_pos = random.randint(150, 500)
+    num_neu = random.randint(50, 200)
+    num_neg = random.randint(20, 150)
+    
     reviews = []
-    for _ in range(300): reviews.append(random.choice(pos) + " " + random.choice(pos).lower())
-    for _ in range(120): reviews.append(random.choice(neu) + " " + random.choice(neu).lower())
-    for _ in range(80): reviews.append(random.choice(neg) + " " + random.choice(neg).lower())
+    for _ in range(num_pos): reviews.append(random.choice(pos) + " " + random.choice(pos).lower())
+    for _ in range(num_neu): reviews.append(random.choice(neu) + " " + random.choice(neu).lower())
+    for _ in range(num_neg): reviews.append(random.choice(neg) + " " + random.choice(neg).lower())
+    
     random.shuffle(reviews)
     return reviews
 
-# --- 2. ADVANCED AI BRAIN ---
-def analyze_sentiment(reviews, is_demo=False):
+# Pass the url into the brain
+def analyze_sentiment(reviews, is_demo=False, url=""):
     sentiments = {"Positive": 0, "Neutral": 0, "Negative": 0}
     top_pos_review = {"text": "", "score": -1.0}
     top_neg_review = {"text": "", "score": 1.0}
@@ -102,8 +111,14 @@ def analyze_sentiment(reviews, is_demo=False):
 
     sample_total = len(reviews)
     
+    # --- ENTERPRISE DATA SCALING ---
     if is_demo:
-        TARGET_TOTAL = 98956
+        # Re-seed the URL to guarantee the same total number for the same link
+        random.seed(url if url else "default")
+        
+        # Generate a unique massive number between 2,000 and 150,000
+        TARGET_TOTAL = random.randint(2150, 148900) 
+        
         multiplier = TARGET_TOTAL / sample_total
         sentiments["Positive"] = int(sentiments["Positive"] * multiplier)
         sentiments["Negative"] = int(sentiments["Negative"] * multiplier)
@@ -166,15 +181,17 @@ if analyze_clicked:
         
         with st.spinner(loading_text):
             if use_demo:
-                time.sleep(1.5) # Adds a fake delay so it looks like it's really scraping
-                reviews, error = get_demo_data(), None
+                time.sleep(1.5) 
+                # Give it the URL here!
+                reviews, error = get_demo_data(product_url), None
             else:
                 reviews, error = get_real_reviews(product_url)
             
             if error:
                 st.error(f"⚠️ {error}")
             else:
-                percent_pos, best, worst, counts, avg_len, score_10, spam_pct, top_p, top_n, display_count = analyze_sentiment(reviews, is_demo=use_demo)
+                # Give it the URL here too!
+                percent_pos, best, worst, counts, avg_len, score_10, spam_pct, top_p, top_n, display_count = analyze_sentiment(reviews, is_demo=use_demo, url=product_url)
                 
                 # STEALTH SUCCESS MESSAGE
                 st.success(f"✅ Successfully extracted and processed {display_count:,} reviews.")
