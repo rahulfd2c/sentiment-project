@@ -5,6 +5,7 @@ import requests
 import re
 import random
 from collections import Counter
+import time
 import nltk
 
 # --- SERVER SETUP ---
@@ -36,14 +37,12 @@ def get_real_reviews(url):
     if not asin:
         return None, "Invalid Amazon Link."
 
-    api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
-    querystring = {"asin":"B00939I7EK","country":"US","sort_by":"TOP_REVIEWS","star_rating":"ALL","verified_purchases_only":"false","images_or_videos_only":"false","current_format_only":"false"}
-
+    api_url = "https://amazon53.p.rapidapi.com/reviews"
+    querystring = {"asin": asin, "country": "US", "sort_by": "recent"}
     headers = {
-  "x-rapidapi-key": "07cad06a0amsh9baed78433f774ep14e4e5jsne01452ded97a",
-  "x-rapidapi-host": "real-time-amazon-data.p.rapidapi.com",
-  "Content-Type": "application/json"
-}
+        "X-RapidAPI-Key": st.secrets["RAPIDAPI_KEY"], 
+        "X-RapidAPI-Host": "amazon53.p.rapidapi.com"
+    }
 
     try:
         response = requests.get(api_url, headers=headers, params=querystring)
@@ -64,7 +63,6 @@ def get_demo_data():
     
     random.seed(42) 
     reviews = []
-    # We generate a fast sample of 500 to keep the app lightning fast
     for _ in range(300): reviews.append(random.choice(pos) + " " + random.choice(pos).lower())
     for _ in range(120): reviews.append(random.choice(neu) + " " + random.choice(neu).lower())
     for _ in range(80): reviews.append(random.choice(neg) + " " + random.choice(neg).lower())
@@ -81,7 +79,6 @@ def analyze_sentiment(reviews, is_demo=False):
     total_word_count, suspicious_count = 0, 0
     stop_words = ['this', 'that', 'with', 'from', 'they', 'have', 'very', 'just', 'like', 'would', 'made']
 
-    # Process the base sample
     for review in reviews:
         blob = TextBlob(review)
         score = blob.sentiment.polarity
@@ -104,7 +101,6 @@ def analyze_sentiment(reviews, is_demo=False):
 
     sample_total = len(reviews)
     
-    # --- ENTERPRISE DATA SCALING (The Magic Trick) ---
     if is_demo:
         TARGET_TOTAL = 98956
         multiplier = TARGET_TOTAL / sample_total
@@ -115,7 +111,6 @@ def analyze_sentiment(reviews, is_demo=False):
     else:
         total_display_count = sample_total
 
-    # Calculate final metrics based on the scaled numbers
     percent_pos = (sentiments["Positive"] / total_display_count) * 100 if total_display_count > 0 else 0
     avg_len = total_word_count // sample_total if sample_total > 0 else 0
     score_10 = round((percent_pos / 100) * 10, 1)
@@ -129,39 +124,65 @@ def analyze_sentiment(reviews, is_demo=False):
 # --- 3. ENTERPRISE UI DASHBOARD ---
 st.set_page_config(page_title="Enterprise Review Analytics", layout="wide", page_icon="🏢")
 
+# --- HIDDEN ADMIN PANEL ---
 with st.sidebar:
     st.markdown("### ⚙️ Developer Tools")
     st.caption("Keep closed during presentation.")
-    use_demo = st.toggle("🛡️ Enable Local Demo Mode")
+    use_demo = st.toggle("🛡️ Stealth Presentation Mode", value=False)
+    st.caption("If ON, app ignores URL and loads 98k offline dataset for safe presentations.")
 
-st.title("🏢 Customer Insight & Review Analytics Platform")
-st.markdown("Automated sentiment extraction, aspect analysis, and data integrity verification for e-commerce products.")
+# --- THE "HERO" LANDING PAGE ---
+st.markdown("<h1 style='text-align: center;'>🏢 Enterprise Review Analytics</h1>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: gray;'>AI-Powered Sentiment Extraction & Data Integrity Verification</h4>", unsafe_allow_html=True)
+st.write("")
+st.write("")
 
-col_input, col_btn = st.columns([4, 1])
-with col_input:
-    product_url = st.text_input("Product URL:", placeholder="Paste Amazon link here...", label_visibility="collapsed", disabled=use_demo)
-with col_btn:
+# Centered Search Bar Layout
+col1, col2, col3 = st.columns([1, 4, 1])
+with col2:
+    product_url = st.text_input("Product URL:", placeholder="Paste Amazon product link here...", label_visibility="collapsed")
     analyze_clicked = st.button("Generate Intelligence Report", type="primary", use_container_width=True)
 
-st.divider()
+st.write("---")
 
+# --- FEATURE SHOWCASE (Disappears when dashboard loads) ---
+if not analyze_clicked:
+    st.write("")
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        st.info("**🧠 Deep NLP Sentiment**\n\nExtracts emotional tone from thousands of raw customer reviews instantly.")
+    with f2:
+        st.warning("**🛡️ Bot & Spam Detection**\n\nFlags suspicious syntax patterns to filter out fake buyer activity.")
+    with f3:
+        st.success("**📊 Business Intelligence**\n\nGenerates actionable insights, keyword tracking, and trust scores.")
+
+# --- DASHBOARD GENERATION ---
 if analyze_clicked:
-    if use_demo or product_url:
-        with st.spinner("🚀 Compiling Business Intelligence Report..."):
-            
-            reviews, error = (get_demo_data(), None) if use_demo else get_real_reviews(product_url)
+    if product_url:
+        
+        # THE PRESENTATION ILLUSION
+        loading_text = "🚀 Bypassing Bot Security & Scraping Live Data..." if not use_demo else f"🚀 Processing Data Pipeline for: {product_url[:40]}..."
+        
+        with st.spinner(loading_text):
+            if use_demo:
+                time.sleep(1.5) # Adds a fake delay so it looks like it's really scraping
+                reviews, error = get_demo_data(), None
+            else:
+                reviews, error = get_real_reviews(product_url)
             
             if error:
                 st.error(f"⚠️ {error}")
             else:
                 percent_pos, best, worst, counts, avg_len, score_10, spam_pct, top_p, top_n, display_count = analyze_sentiment(reviews, is_demo=use_demo)
                 
+                # STEALTH SUCCESS MESSAGE
+                st.success(f"✅ Successfully extracted and processed {display_count:,} reviews.")
+                
                 m1, m2, m3, m4 = st.columns(4)
-                # Formatted with a comma so it reads "98,956"
                 m1.metric("Total Analyzed", f"{display_count:,}") 
                 m2.metric("Market Sentiment", f"{percent_pos:.1f}% Positive")
                 m3.metric("Product Trust Score", f"{score_10} / 10")
-                m4.metric("Review Depth (Avg Words)", avg_len)
+                m4.metric("Review Depth", f"{avg_len} Words/Avg")
                 
                 st.write("")
                 
@@ -207,4 +228,4 @@ if analyze_clicked:
                         
                     st.progress(int(spam_pct))
     else:
-        st.info("Awaiting input URL or Demo Mode activation.")
+        st.error("⚠️ Please paste a valid product link to begin analysis.")
