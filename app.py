@@ -5,6 +5,12 @@ import requests
 import re
 import random
 from collections import Counter
+import nltk # <--- ADD THIS
+
+# --- DOWNLOAD THE DICTIONARY FOR THE CLOUD ---
+nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
+nltk.download('brown', quiet=True)
 
 # --- 1. THE DATA ENGINES ---
 def get_asin_from_url(url):
