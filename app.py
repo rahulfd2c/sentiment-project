@@ -38,7 +38,7 @@ def get_real_reviews(url):
     if not asin:
         return None, "Invalid Amazon Link."
 
-api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
+    api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
     querystring = {"asin":"B00939I7EK","country":"US","sort_by":"TOP_REVIEWS","star_rating":"ALL","verified_purchases_only":"false","images_or_videos_only":"false","current_format_only":"false"}
 
     headers = {
