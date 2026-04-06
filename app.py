@@ -4,22 +4,17 @@ import pandas as pd
 import requests
 import re
 
-# --- 1. THE SMART DATA ENGINE ---
+# --- 1. THE DATA ENGINES ---
 def get_asin_from_url(url):
-    """Extracts the unique Amazon Product ID."""
     match = re.search(r"([A-Z0-9]{10})(?:[/?]|$)", url)
-    if match:
-        return match.group(1)
-    return None
+    return match.group(1) if match else None
 
 def extract_all_reviews(data):
-    """A heat-seeking missile that finds reviews in ANY Api format."""
     found_reviews = []
     if isinstance(data, dict):
         for key, value in data.items():
-            # Look for keys commonly used for review text
             if key.lower() in ['review', 'reviewtext', 'text', 'body', 'review_text']:
-                if isinstance(value, str) and len(value) > 15: # Ignore short useless strings
+                if isinstance(value, str) and len(value) > 15:
                     found_reviews.append(value)
             else:
                 found_reviews.extend(extract_all_reviews(value))
@@ -33,14 +28,13 @@ def get_real_reviews(url):
     if not asin:
         return None, "Invalid Amazon Link. Make sure it contains the product ID (e.g., B08N5WRWNW)."
 
-    # RapidAPI Amazon53 Setup
     api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
     querystring = {"asin":"B00939I7EK","country":"US","sort_by":"TOP_REVIEWS","star_rating":"ALL","verified_purchases_only":"false","images_or_videos_only":"false","current_format_only":"false"}
 
     headers = {
-	"x-rapidapi-key": "07cad06a0amsh9baed78433f774ep14e4e5jsne01452ded97a",
-	"x-rapidapi-host": "real-time-amazon-data.p.rapidapi.com",
-	"Content-Type": "application/json"
+  "x-rapidapi-key": "07cad06a0amsh9baed78433f774ep14e4e5jsne01452ded97a",
+  "x-rapidapi-host": "real-time-amazon-data.p.rapidapi.com",
+  "Content-Type": "application/json"
 }
 
     try:
@@ -49,20 +43,35 @@ def get_real_reviews(url):
             return None, "API Key invalid or you hit your free limit for the month!"
             
         data = response.json()
-        
-        # Use the smart extractor
         reviews = extract_all_reviews(data)
-        
-        # Remove duplicates just in case the API sends them twice
         reviews = list(set(reviews))
         
         if len(reviews) == 0:
             return None, "No text reviews found for this specific product."
             
         return reviews, None
-        
     except Exception as e:
         return None, f"Connection Error: {e}"
+
+# --- THE LIFESAVER: OFFLINE DEMO DATA ---
+def get_demo_data():
+    return [
+        "Absolutely incredible! The build quality is fantastic and it arrived a day early. 5 stars!",
+        "It's decent. Does exactly what it says on the box, nothing more, nothing less.",
+        "Terrible product. It broke within 10 minutes of taking it out of the package. Do not buy.",
+        "I bought this for my daughter and she loves it. The color is vibrant and it feels sturdy.",
+        "Overpriced garbage. You can find better quality at a dollar store. Customer service ignored me.",
+        "A bit smaller than I expected, but it gets the job done. Good value for the money.",
+        "Best purchase I have made all year! Highly recommend to anyone looking for one of these.",
+        "The battery life is an absolute joke. It died after an hour of use.",
+        "It's okay. The instructions were really confusing, but once I figured it out it worked fine.",
+        "Completely defective right out of the box. I am demanding a refund immediately.",
+        "Exceeded all my expectations! The software is smooth and it pairs instantly with my phone.",
+        "Average. Not the best, not the worst.",
+        "Horrible design. Who thought it was a good idea to put the power button on the bottom?",
+        "Beautifully packaged and works flawlessly. I will be buying another one as a gift.",
+        "The screen scratches way too easily. Very disappointed in the durability."
+    ]
 
 # --- 2. THE SENTIMENT BRAIN ---
 def analyze_sentiment(reviews):
@@ -95,40 +104,47 @@ st.set_page_config(page_title="AI Review Analyzer", layout="wide", page_icon="�
 st.title("📈 Live Product Sentiment Dashboard")
 st.markdown("Enter any Amazon product link to extract real customer reviews and generate an instant AI sentiment analysis.")
 
-# Layout: Search bar and button next to each other
+# --- THE TOGGLE SWITCH ---
+use_demo = st.toggle("🛡️ Use Offline Demo Mode (For Presentations)")
+
 col_input, col_btn = st.columns([4, 1])
 with col_input:
-    product_url = st.text_input("Amazon URL:", placeholder="https://www.amazon.com/dp/B08N5WRWNW", label_visibility="collapsed")
+    # Disable the input box if Demo Mode is on
+    product_url = st.text_input("Amazon URL:", placeholder="https://www.amazon.com/dp/B08N5WRWNW", label_visibility="collapsed", disabled=use_demo)
 with col_btn:
     analyze_clicked = st.button("Generate Dashboard", type="primary", use_container_width=True)
 
 st.divider()
 
 if analyze_clicked:
-    if product_url:
-        with st.spinner("🚀 Scraping live data from Amazon..."):
+    if use_demo or product_url:
+        with st.spinner("🚀 Analyzing data..."):
             
-            reviews, error = get_real_reviews(product_url)
+            # Decide where to get the data
+            if use_demo:
+                reviews = get_demo_data()
+                error = None
+            else:
+                reviews, error = get_real_reviews(product_url)
             
             if error:
                 st.error(f"⚠️ {error}")
             else:
                 percent_positive, best, worst, sentiment_counts = analyze_sentiment(reviews)
                 
-                # --- DASHBOARD LAYOUT ---
-                st.success(f"Successfully analyzed {len(reviews)} real reviews!")
+                if use_demo:
+                    st.success("✅ Dashboard generated using Offline Demo Data.")
+                else:
+                    st.success(f"✅ Successfully analyzed {len(reviews)} live reviews!")
                 
-                # Top Row Metrics
                 m1, m2, m3 = st.columns(3)
                 m1.metric("Total Reviews Scraped", len(reviews))
                 m2.metric("Overall Sentiment", f"{percent_positive:.1f}% Positive")
                 m3.metric("Neutral / Mixed", f"{sentiment_counts['Neutral']} Reviews")
                 
-                st.write("") # Spacing
+                st.write("") 
                 
-                # Bottom Row Charts & Text
                 c1, c2 = st.columns([1, 1.5])
-                
                 with c1:
                     st.subheader("📊 Sentiment Distribution")
                     chart_data = pd.DataFrame(
@@ -145,4 +161,4 @@ if analyze_clicked:
                     st.subheader("⚠️ Top Negative Review")
                     st.error(f'"{worst["text"]}"')
     else:
-        st.warning("Paste a link first!")
+        st.warning("Paste a link or enable Demo Mode first!")
