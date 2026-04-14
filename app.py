@@ -169,14 +169,14 @@ def analyze_sentiment(reviews, is_demo=False, url=""):
     return percent_pos, top_pos_review, top_neg_review, sentiments, avg_len, score_10, spam_percent, top_pos_kws, top_neg_kws, total_display_count, trend_df, threats, value_perception
 
 # --- 3. ENTERPRISE UI DASHBOARD ---
-st.markdown("<h1 style='text-align: center;'>📊 Customer Review Sentiment Analyzer</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>Welcome </h1>", unsafe_allow_html=True)
 with st.sidebar:
     st.markdown("### ⚙️ Developer Tools")
     st.caption("Keep closed during presentation.")
     use_demo = st.toggle("🛡️ Stealth Presentation Mode", value=False)
     st.caption("Locks to deterministic offline dataset for guaranteed presentation success.")
 
-st.markdown("<h1 style='text-align: center;'>🏢 Market Intelligence & Threat Analytics</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>📊 Customer Review Sentiment Analyzer</h1>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center; color: gray;'>AI Sentiment Extraction, Value Scoring & Data Integrity Verification</h4>", unsafe_allow_html=True)
 st.write("")
 
