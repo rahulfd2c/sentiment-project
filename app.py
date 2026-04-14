@@ -178,13 +178,13 @@ with st.sidebar:
     st.caption("Locks to deterministic offline dataset for guaranteed presentation success.")
 
 st.markdown("<h1 style='text-align: center;'>Customer Review Sentiment Analyzer</h1>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: gray;'>AI Sentiment Extraction, Value Scoring & Data Integrity Verification</h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: gray;'>Extract Sentiment, Detect Fake Reviews & Generate Actionable Insights from Customer Feedback</h4>", unsafe_allow_html=True)
 st.write("")
 
 col1, col2, col3 = st.columns([1, 4, 1])
 with col2:
     product_url = st.text_input("Product URL:", placeholder="Paste product link here...", label_visibility="collapsed")
-    analyze_clicked = st.button("Initialize Deep Scan", type="primary", use_container_width=True)
+    analyze_clicked = st.button("Analyze", type="primary", use_container_width=True)
 
 st.write("---")
 
