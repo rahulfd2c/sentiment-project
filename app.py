@@ -40,7 +40,15 @@ def get_real_reviews(url):
     if not asin:
         return None, "Invalid Amazon Link."
 
-   api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
+    api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
+    querystring = {
+        "asin": asin,
+        "country": "US",
+        "sort_by": "TOP_REVIEWS",
+        "star_rating": "ALL"
+    }
+
+    api_url = "https://real-time-amazon-data.p.rapidapi.com/product-reviews"
     querystring = {"asin":"B00939I7EK","country":"US","sort_by":"TOP_REVIEWS","star_rating":"ALL","verified_purchases_only":"false","images_or_videos_only":"false","current_format_only":"false"}
 
     headers = {
@@ -51,25 +59,20 @@ def get_real_reviews(url):
 
     try:
         response = requests.get(api_url, headers=headers, params=querystring)
+
         if response.status_code != 200:
-            return None, "API Error!"
+            return None, "API Key invalid or limit reached!"
+
         data = response.json()
         reviews = list(set(extract_all_reviews(data)))
+
+        if not reviews:
+            return None, "No text reviews found."
+
         return reviews, None
+
     except Exception as e:
-        return None, str(e)
-
-def get_demo_data(url=""):
-    pos = ["Amazing product!", "Loved it!", "Best purchase ever"]
-    neu = ["It's okay", "Average product"]
-    neg = ["Terrible", "Waste of money", "Do not buy"]
-
-    random.seed(url)
-    reviews = [random.choice(pos) for _ in range(200)] + \
-              [random.choice(neu) for _ in range(80)] + \
-              [random.choice(neg) for _ in range(50)]
-    random.shuffle(reviews)
-    return reviews
+        return None, f"Connection Error: {e}"
 
 # --- ANALYSIS ---
 def analyze_sentiment(reviews):
