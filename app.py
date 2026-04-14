@@ -169,8 +169,7 @@ def analyze_sentiment(reviews, is_demo=False, url=""):
     return percent_pos, top_pos_review, top_neg_review, sentiments, avg_len, score_10, spam_percent, top_pos_kws, top_neg_kws, total_display_count, trend_df, threats, value_perception
 
 # --- 3. ENTERPRISE UI DASHBOARD ---
-st.set_page_config(page_title="Enterprise Analytics", layout="wide", page_icon="🏢")
-
+st.markdown("<h1 style='text-align: center;'>📊 Customer Review Sentiment Analyzer</h1>", unsafe_allow_html=True)
 with st.sidebar:
     st.markdown("### ⚙️ Developer Tools")
     st.caption("Keep closed during presentation.")
