@@ -176,8 +176,29 @@ with st.sidebar:
     use_demo = st.toggle("🛡️ Stealth Presentation Mode", value=False)
     st.caption("Locks to deterministic offline dataset for guaranteed presentation success.")
 
-st.markdown("<h1 style='text-align: center;'>📊 Customer Review Sentiment Analyzer</h1>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: gray;'>AI Sentiment Extraction, Value Scoring & Data Integrity Verification</h4>", unsafe_allow_html=True)
+st.markdown("""
+<style>
+.responsive-title {
+    text-align: center;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
+}
+
+.responsive-subtitle {
+    text-align: center;
+    color: gray;
+    margin-bottom: 1.5rem;
+    font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+}
+</style>
+
+<div class="responsive-title">📊 Customer Review Sentiment Analyzer</div>
+<div class="responsive-subtitle">
+Analyze customer reviews using AI-driven sentiment insights
+</div>
+""", unsafe_allow_html=True)
 st.write("")
 
 col1, col2, col3 = st.columns([1, 4, 1])
